@@ -1,21 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 0.8
-# test cases:
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?titles=user%20talk:Philippe|main%20Page|User_talk:MZMcBride
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Wikipedia_caultk:Sandbox|Wikipedia_caulk:Sandbox
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Fooooooo|Barbbbbbb|
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Main+Page%7CFooooooooo|||
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=bgwiki_p&titles=<b>test</b>
-# Wikipédia:Annonces with frwiki_p
-# Интранет on bgwiki_p
-# HAGGER????????????????????????????????????????????? on enwiki_p
-# Main page on enwiki_p
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiktionary_p&titles=fap
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=dewiki_p
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=dewiki_ppppp
+# version 0.9
 import cgi, cgitb; cgitb.enable()
 
 import os
@@ -70,7 +55,10 @@ def database_list():
     FROM wiki
     WHERE is_closed = 0;
     ''')
-    return [row[0] for row in cursor.fetchall()]
+    databases = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [database[0] for database in databases]
 
 def choose_host_and_domain(db):
     conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
@@ -84,11 +72,14 @@ def choose_host_and_domain(db):
     WHERE dbname = '%s';
     ''' % db)
     for row in cursor.fetchall():
-      host = 'sql-s%s' % str(row[0])
-      domain = '%s' % row[1]
-    return host, domain
+        if str(row[0]) == '1':
+            host = 'sql-s1-fast'
+        else:
+            host = 'sql-s%s' % str(row[0])
+        domain = '%s' % row[1]
     cursor.close()
     conn.close()
+    return {'host': host, 'domain': domain}
 
 def page_info(db, namespace, page_title):
     conn = MySQLdb.connect(host=host, db=db, read_default_file='/home/mzmcbride/.my.cnf')
@@ -109,9 +100,11 @@ def page_info(db, namespace, page_title):
     AND wl_title = %s;
     ''' , (db, ns_name, page_title))
     for row in cursor.fetchall():
-        return { 'page_status': row[0], 'count': row[1]}
+        page_status = row[0]
+        count = row[1]
     cursor.close()
     conn.close()
+    return { 'page_status': page_status, 'count': count}
 
 secret_key = settings.secret_key
 trusted_keys = []
@@ -136,9 +129,9 @@ else:
 
 # All right, now let's pick a host and domain
 try:
-    host_and_domain = choose_host_and_domain(db)
-    host = host_and_domain[0]
-    domain = host_and_domain[1]
+    connection_props = choose_host_and_domain(db)
+    host = connection_props['host']
+    domain = connection_props['domain']
 except:
     host = None
     domain = None
@@ -243,9 +236,15 @@ if host is not None:
         output.append(table_row)
 
 if logged_in:
-    login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?logout=1" title="log out">log out</a>'
+    if os.environ['QUERY_STRING']:
+        login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?logout=1&tool=watcher&%s" title="log out">log out</a>' % os.environ['QUERY_STRING']
+    else:
+        login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?logout=1&tool=watcher" title="log out">log out</a>'
 else:
-    login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py" title="log in">log in</a>'
+    if os.environ['QUERY_STRING']:
+        login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?tool=watcher&%s" title="log in">log in</a>' % os.environ['QUERY_STRING']
+    else:
+        login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?tool=watcher" title="log in">log in</a>'
 
 if exclude_count > 0:
     exclude_footer = '&mdash; indicates the page has fewer than 30 watchers<br />'
