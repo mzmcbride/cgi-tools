@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 0.4
+# version 0.5
 # test cases:
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?titles=user%20talk:Philippe|main%20Page|User_talk:MZMcBride
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Wikipedia_caultk:Sandbox|Wikipedia_caulk:Sandbox
@@ -89,6 +89,7 @@ if 'titles' in form:
 else:
     input = ''
 
+cj_info = '' # In case it doesn't get set later.
 i = 0
 output = []
 for title in input.split('|'):
@@ -140,16 +141,39 @@ for title in input.split('|'):
         else:
             pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
         pretty_title = pretty_title.lstrip(':').decode('utf8')
-        table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td></tr>' % (domain,
-                                                                                                               urllib.quote(pretty_title.encode('utf8')),
-                                                                                                               xml.sax.saxutils.escape(pretty_title.encode('utf8')),
-                                                                                                               css_class,
-                                                                                                               xml.sax.saxutils.escape(pretty_title.encode('utf8')),
-                                                                                                               count)
+        # Just for fun :-)
+        try:
+            if re.match('centi(jimboe?s?|jimbeaux?)$', form["measure"].value.lower(), re.I):
+                cj_count = page_info(db, 'User', 'Jimbo_Wales')['count']
+                cj_info = '<div id="subheadline">1 centijimbo is %.2f watchers</div>' % (float(cj_count)/100)
+                cj_header = '<th class="header">Centijimbos</th>'
+                if count < 30:
+                    cj_data = '<td>&mdash;</td>'
+                else:
+                    cj_data = '<td>%.1f</td>' % ((float(count)/cj_count) * 100)
+            else:
+                cj_info = ''
+                cj_header = ''
+                cj_data = ''
+        except:
+            cj_info = ''
+            cj_header = ''
+            cj_data = ''
+        if count < 30:
+            count = '&mdash;'
+        else:
+            count = count
+        table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
+                                                                                                                 urllib.quote(pretty_title.encode('utf8')),
+                                                                                                                 xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                                 css_class,
+                                                                                                                 xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                                 count,
+                                                                                                                 cj_data)
     output.append(table_row)
 
 if i > 0:
-    redirect_footer = 'redirects are in <i>italics</i>'
+    redirect_footer = '<div id="redirect-info">redirects are in <i>italics</i></div>'
 else:
     redirect_footer = ''
 
@@ -158,7 +182,7 @@ Content-Type: text/html;charset=utf-8\n
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-<link rel="stylesheet" href="../style.css?1" type="text/css" />
+<link rel="stylesheet" href="../style.css?2" type="text/css" />
 <script type="text/javascript" src="../jquery-1.3.2.min.js"></script> 
 <script type="text/javascript" src="../jquery.tablesorter.js"></script>
 <script type="text/javascript">
@@ -172,7 +196,8 @@ Content-Type: text/html;charset=utf-8\n
 <title>watcher</title>
 </head>
 <body>
-<div class="header" id="main-title"><a href="/~mzmcbride/cgi-bin/watcher.py" title="watcher">watcher</a></div>"""
+<div class="header" id="main-title"><a href="/~mzmcbride/cgi-bin/watcher.py" title="watcher">watcher</a></div>
+%s""" % (cj_info)
 
 if form:
     try:
@@ -182,12 +207,12 @@ if form:
 <tr>
 <th class="header">Page</th>
 <th class="header">Watchers</th>
-</tr>
+%s</tr>
 </thead>
 <tbody>
 %s
 </tbody>
-</table>""" % ('\n'.join(output))
+</table>""" % (cj_header, '\n'.join(output))
 
     except:
         print """\
@@ -227,11 +252,12 @@ else:
 
 print """\
 <div id="footer">
-<div id="redirect-info">%s</div>
-<div id="meta-info">
+%s<div id="meta-info">
 <a href="http://www.gnu.org/copyleft/gpl.html" title="GNU General Public License, version 3">license</a><!--
 -->&nbsp;<b>&middot;</b>&nbsp;<!--
---><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride&action=edit&section=new" title="Report a bug">bugs</a>
+--><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/watcher&action=edit&section=new" title="Report a bug">bugs</a><!--
+-->&nbsp;<b>&middot;</b>&nbsp;<!--
+-->&mdash; indicates the page has fewer than 30 watchers
 </div>
 </div>
 </body>
