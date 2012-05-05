@@ -1,12 +1,11 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 1.3
+# version 1.4
 
 import cgi
 import os
 import urllib
 import re
-import xml.sax.saxutils
 import MySQLdb
 import Cookie
 import hashlib
@@ -23,10 +22,12 @@ else:
 
 def trusted_users():
     trusted_users = []
-    conn = MySQLdb.connect(host='sql-s3', db='metawiki_p', read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host='sql-s7',
+                           db='metawiki_p',
+                           read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
-    /* deliverybot-2.py SLOW_OK */
+    /* watcher.py SLOW_OK */
     SELECT DISTINCT
       pl_title
     FROM pagelinks
@@ -37,17 +38,18 @@ def trusted_users():
     AND pl_namespace IN (2,3);
     ''')
     for row in cursor.fetchall():
-        page_title = u'%s' % unicode(row[0], 'utf-8')
-        trusted_users.append(re.sub('_', ' ', page_title))
+        trusted_users.append(re.sub('_', ' ', row[0]))
     cursor.close()
     conn.close()
     return trusted_users
 
 def database_list():
-    conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host='sql-s3',
+                           db='toolserver',
+                           read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
-    /* wikistalk.py database_list */
+    /* watcher.py database_list */
     SELECT
       dbname
     FROM wiki
@@ -59,7 +61,9 @@ def database_list():
     return [database[0] for database in databases]
 
 def choose_host_and_domain(db):
-    conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host='sql-s3',
+                           db='toolserver',
+                           read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
     /* watcher.py choose_host_and_domain */
@@ -80,7 +84,9 @@ def choose_host_and_domain(db):
     return {'host': host, 'domain': domain}
 
 def page_info(db, namespace, page_title):
-    conn = MySQLdb.connect(host=host, db=db, read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host=host,
+                           db=db,
+                           read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
     /* watcher.py page_info */
@@ -108,7 +114,7 @@ secret_key = settings.secret_key
 trusted_keys = []
 for name in trusted_users():
     n = hashlib.md5()
-    n.update(name.encode('utf-8'))
+    n.update(name)
     n.update('watcher')
     n.update(secret_key)
     trusted_keys.append(n.hexdigest())
@@ -145,7 +151,8 @@ exclude_count = 0
 output = []
 if host is not None:
     for title in input.split('|'):
-        title = re.sub(r'(\xe2\x80\x8e|\xe2\x80\x8f)', '', title).strip(' ') # Eliminate LTR and RTL marks and strip extra whitespace.
+        # Eliminate LTR and RTL marks and strip extra whitespace.
+        title = re.sub(r'(\xe2\x80\x8e|\xe2\x80\x8f)', '', title).strip(' ')
         if title == '':
             continue
         else:
@@ -199,7 +206,10 @@ if host is not None:
                 pretty_title = '%s' % (re.sub('_', ' ', pre_title))
             else:
                 pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
-            pretty_title = pretty_title.lstrip(':').decode('utf8')
+            try:
+                pretty_title = pretty_title.lstrip(':').decode('utf-8')
+            except UnicodeDecodeError:
+                pretty_title = pretty_title.lstrip(':').decode('latin-1')
             # Just for fun :-)
             try:
                 if re.match('centi(jimboe?s?|jimbeaux?)$', form["measure"].value.lower(), re.I):
@@ -228,9 +238,9 @@ if host is not None:
             if combined_title != 'User_talk:Durova' and combined_title != 'User:Durova':
                 table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
                                                                                                                      urllib.quote(pretty_title.encode('utf8')),
-                                                                                                                     xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                                     cgi.escape(pretty_title.encode('utf8'),quote=True),
                                                                                                                      css_class,
-                                                                                                                     xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                                     cgi.escape(pretty_title.encode('utf8'),quote=True),
                                                                                                                      count,
                                                                                                                      cj_data)
             else:
