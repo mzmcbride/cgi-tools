@@ -1,27 +1,23 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 # version 0.1
-import cgi, cgitb; cgitb.enable()
 
-import MySQLdb
-import os
-import urllib
-import urllib2
-import re
+import cgi
 import Cookie
 import hashlib
+import MySQLdb
+import os
+import re
+import urllib
+import urllib2
 
 import settings
 
-if os.environ.has_key('HTTP_COOKIE'):
-    dough = os.environ['HTTP_COOKIE']
-    cookies = dough.split(';')
-    for i in cookies:
-        cookie_session = i.split('=')[1]
-
 def trusted_users():
     trusted_users = []
-    conn = MySQLdb.connect(host='sql-s3', db='metawiki_p', read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host='sql-s7',
+                           db='metawiki_p',
+                           read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
     /* login.py SLOW_OK */
@@ -35,8 +31,7 @@ def trusted_users():
     AND pl_namespace IN (2,3);
     ''')
     for row in cursor.fetchall():
-        page_title = u'%s' % unicode(row[0], 'utf-8')
-        trusted_users.append(re.sub('_', ' ', page_title))
+        trusted_users.append(re.sub('_', ' ', row[0]))
     cursor.close()
     conn.close()
     return trusted_users
@@ -80,7 +75,7 @@ if user_input is None and logout_input == '0':
         return_string = ''
     print """\
 Content-Type: text/html;charset=utf-8\n
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!doctype html>
 <html>
 <head>
 <link rel="stylesheet" href="../style.css?2" type="text/css" />
@@ -133,7 +128,11 @@ Content-Type: text/html;charset=utf-8\n
 </table>
 </form>""" % return_string
 
-elif language_input is not None and project_input is not None and user_input is not None and password_input is not None and tool_input is not None:
+elif (language_input
+      and project_input
+      and user_input
+      and password_input
+      and tool_input):
     url = 'http://toolserver.org/~magnus/tusc.php'
     values = {'language' : language_input,
               'project' : project_input,
@@ -155,11 +154,11 @@ elif language_input is not None and project_input is not None and user_input is 
              cookie = Cookie.SimpleCookie()
              cookie['mz_chocolate_chip'] = session
              cookie['mz_chocolate_chip']['max-age'] = 60**5
-             cookie['mz_chocolate_chip']['path'] = '/'
+             cookie['mz_chocolate_chip']['path'] = '/~mzmcbride/watcher/'
              if tool_input == 'watcher' and form.getvalue('titles') is not None:
-                  return_message = ' Proceed to <a href="http://toolserver.org/~mzmcbride/cgi-bin/watcher.py?db=%s&titles=%s" title="watcher">watcher</a>?' % (form.getvalue('db'), form.getvalue('titles'))
+                  return_message = ' Proceed to <a href="http://toolserver.org/~mzmcbride/watcher/?db=%s&titles=%s" title="watcher">watcher</a>?' % (form.getvalue('db'), form.getvalue('titles'))
              else:
-                  return_message = ' Proceed to <a href="http://toolserver.org/~mzmcbride/cgi-bin/watcher.py" title="watcher">watcher</a>?'
+                  return_message = ' Proceed to <a href="http://toolserver.org/~mzmcbride/watcher/" title="watcher">watcher</a>?'
              login_status = 'You\'re now logged in!%s' % return_message
              print cookie
         else:
@@ -193,7 +192,7 @@ else:
          cookie = Cookie.SimpleCookie()
          cookie['mz_chocolate_chip'] = 'invalid'
          cookie['mz_chocolate_chip']['max-age'] = 0
-         cookie['mz_chocolate_chip']['path'] = '/'
+         cookie['mz_chocolate_chip']['path'] = '/~mzmcbride/watcher/'
          print cookie
     else:
          login_status = 'Sorry, some piece of your login credentials is missing.'
