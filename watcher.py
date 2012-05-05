@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 0.7
+# version 0.8
 # test cases:
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?titles=user%20talk:Philippe|main%20Page|User_talk:MZMcBride
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Wikipedia_caultk:Sandbox|Wikipedia_caulk:Sandbox
@@ -18,11 +18,47 @@
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=dewiki_ppppp
 import cgi, cgitb; cgitb.enable()
 
-import os, urllib
+import os
+import urllib
+import urllib2
 import re
 import xml.sax.saxutils
 import glob
 import MySQLdb
+import Cookie
+import hashlib
+
+import settings
+
+if os.environ.has_key('HTTP_COOKIE'):
+    dough = os.environ['HTTP_COOKIE']
+    cookies = dough.split(';')
+    for i in cookies:
+        cookie_session = i.split('=')[1]
+else:
+    cookie_session = 'invalid'
+
+def trusted_users():
+    trusted_users = []
+    conn = MySQLdb.connect(host='sql-s3', db='metawiki_p', read_default_file='/home/mzmcbride/.my.cnf')
+    cursor = conn.cursor()
+    cursor.execute('''
+    /* deliverybot-2.py SLOW_OK */
+    SELECT DISTINCT
+      pl_title
+    FROM pagelinks
+    JOIN page
+    ON pl_from = page_id
+    WHERE page_namespace = 0
+    AND page_title = 'Toolserver/watcher'
+    AND pl_namespace IN (2,3);
+    ''')
+    for row in cursor.fetchall():
+        page_title = u'%s' % unicode(row[0], 'utf-8')
+        trusted_users.append(re.sub('_', ' ', page_title))
+    cursor.close()
+    conn.close()
+    return trusted_users
 
 def database_list():
     conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
@@ -77,6 +113,20 @@ def page_info(db, namespace, page_title):
     cursor.close()
     conn.close()
 
+secret_key = settings.secret_key
+trusted_keys = []
+for name in trusted_users():
+    n = hashlib.md5()
+    n.update(name)
+    n.update('watcher')
+    n.update(secret_key)
+    trusted_keys.append(n.hexdigest())
+
+if cookie_session in trusted_keys:
+    logged_in = True
+else:
+    logged_in = False
+
 form = cgi.FieldStorage()
 # Pick a db; make enwiki_p the default
 if form.getvalue('db') is not None:
@@ -92,12 +142,6 @@ try:
 except:
     host = None
     domain = None
-
-# Some debugging code
-try:
-    debug = form['debug'].value
-except:
-    debug = 'false'
 
 if 'titles' in form:
     input = form["titles"].value
@@ -182,7 +226,7 @@ if host is not None:
                 cj_info = ''
                 cj_header = ''
                 cj_data = ''
-            if debug in ('true', '1'):
+            if logged_in:
                 count = count
             elif count < 30:
                 count = '&mdash;'
@@ -197,6 +241,11 @@ if host is not None:
                                                                                                                      count,
                                                                                                                      cj_data)
         output.append(table_row)
+
+if logged_in:
+    login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?logout=1" title="log out">log out</a>'
+else:
+    login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py" title="log in">log in</a>'
 
 if exclude_count > 0:
     exclude_footer = '&mdash; indicates the page has fewer than 30 watchers<br />'
@@ -287,11 +336,17 @@ else:
 </form>"""
 
 print """\
-<div id="footer"><div id="redirect-info">%s%s</div><div id="meta-info">
-<a href="http://www.gnu.org/copyleft/gpl.html" title="GNU General Public License, version 3">license</a><!--
+<div id="footer">
+<div id="redirect-info">
+%s%s
+</div>
+<div id="meta-info">
+%s<!--
+-->&nbsp;<b>&middot;</b>&nbsp;<!--
+--><a href="http://www.gnu.org/copyleft/gpl.html" title="GNU General Public License, version 3">license</a><!--
 -->&nbsp;<b>&middot;</b>&nbsp;<!--
 --><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/watcher&action=edit&section=new" title="Report a bug">bugs</a>
 </div>
 </div>
 </body>
-</html>""" % (exclude_footer, redirect_footer)
+</html>""" % (exclude_footer, redirect_footer, login_footer)
