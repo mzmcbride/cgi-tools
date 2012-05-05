@@ -94,7 +94,7 @@ def page_info(db, namespace, page_title):
       page_is_redirect,
       COUNT(*)
     FROM watchlist
-    JOIN toolserver.namespace
+    JOIN toolserver.namespacename
     ON dbname = %s
     AND wl_namespace = ns_id
     LEFT JOIN page
