@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 1.2
+# version 1.3
 
 import cgi
 import os
@@ -108,7 +108,7 @@ secret_key = settings.secret_key
 trusted_keys = []
 for name in trusted_users():
     n = hashlib.md5()
-    n.update(name)
+    n.update(name.encode('utf-8'))
     n.update('watcher')
     n.update(secret_key)
     trusted_keys.append(n.hexdigest())
@@ -206,10 +206,10 @@ if host is not None:
                     cj_count = page_info(db, 'User', 'Jimbo_Wales')['count']
                     cj_info = '<div id="subheadline">1 centijimbo is %.2f watchers</div>' % (float(cj_count)/100)
                     cj_header = '<th class="header">Centijimbos</th>'
-                    if count < 30:
-                        cj_data = '<td>&mdash;</td>'
-                    else:
+                    if logged_in or not count < 30:
                         cj_data = '<td>%.1f</td>' % ((float(count)/cj_count) * 100)
+                    elif count < 30:
+                        cj_data = '<td>&mdash;</td>'
                 else:
                     cj_info = ''
                     cj_header = ''
