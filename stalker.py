@@ -321,9 +321,9 @@ else:
         user_no = user_numbers[user]
         try:
             user_name, user_registration, user_editcount = get_user_info(cursor, user)
-            linked_user_name = '<a href="http://%s/wiki/User:%s">%s</a>' % (domain,
-                                                                            urllib.quote(user_name),
-                                                                            escape(user_name))
+            linked_user_name = '<a href="//%s/wiki/User:%s">%s</a>' % (domain,
+                                                                       urllib.quote(user_name),
+                                                                       escape(user_name))
             first_live_edit = get_first_live_edit(cursor, user)
             first_dead_edit = get_first_dead_edit(cursor, user)
             table_row = '''\
@@ -447,7 +447,7 @@ else:
                 print """\
 <tr>
 <td>%(count)s</td>
-<td><a href="http://%(domain)s/wiki/%(epage)s">%(fpage)s</a></td>
+<td><a href="//%(domain)s/wiki/%(epage)s">%(fpage)s</a></td>
 <td>%(editedby)d/%(users)d [%(specifics)s]</td>
 </tr> """ % { 'domain': domain,
               'epage': re.sub(r'(%20| )', '_', urllib.quote(page)),
@@ -477,7 +477,7 @@ print """\
 <div id="footer">
 <div id="meta-info">
 public domain&nbsp;<b>&middot;</b>&nbsp;\
-<a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride&amp;action=edit&amp;section=new" title="Report a bug">bugs</a>
+<a href="//en.wikipedia.org/w/index.php?title=User_talk:MZMcBride&amp;action=edit&amp;section=new" title="Report a bug">bugs</a>
 </div>
 </div>
 <script type="text/javascript">
