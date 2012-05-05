@@ -3,16 +3,15 @@
 # Version 0.2
 
 import cgi
-
 import operator
 import re
 import MySQLdb
 
-#import settings
-
 def database_list():
     databases = []
-    conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host='sql-s3',
+                           db='toolserver',
+                           read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
     /* yanker.py database_list */
@@ -30,7 +29,9 @@ def database_list():
 
 def choose_host_and_domain(db):
     db_props = {}
-    conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host='sql-s3',
+                           db='toolserver',
+                           read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
     /* yanker.py choose_host_and_domain */
@@ -49,7 +50,9 @@ def choose_host_and_domain(db):
 
 def get_namespace_names(db):
     namespaces = {}
-    conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host='sql-s3',
+                           db='toolserver',
+                           read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
     /* yanker.py get_namespace_names */
@@ -102,26 +105,27 @@ except:
     host = None
     domain = None
 
-namespaces = get_namespace_names(db)
+namespace_names = get_namespace_names(db)
 
 print """\
 Content-Type: text/html;charset=utf-8\n
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!doctype html>
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
 <title>yanker</title>
 <link rel="stylesheet" href="../style-yanker.css?3" type="text/css" />
 </head>
 <body>
-<div class="header" id="main-title"><a href="/~mzmcbride/cgi-bin/yanker.py" title="yanker">yanker</a></div>"""
+<div class="header" id="main-title"><a href="/~mzmcbride/yanker/" title="yanker">yanker</a></div>"""
 
 if form.getvalue('list') is None:
     print """\
+<form action="http://toolserver.org/~mzmcbride/yanker/" method="get">
 <table id="input" class="inner-table">
 <tr>
 <th colspan="3" class="header">Make your choices.</th>
 </tr>
-<form action="http://toolserver.org/~mzmcbride/cgi-bin/yanker.py" method="get">
 <tr>
 <td class="bold">Database</td>
 <td>
@@ -148,6 +152,7 @@ List
 <select id="list" name="list" style="width:100%%;">
 <option value="">Select one</option>
 <option value="pages">Pages in a category</option>
+<option value="pages">Page titles matching a particular pattern</option>
 <option value="loldongs">loldongs</option>
 </select>
 </td>
@@ -170,25 +175,31 @@ Page
 </tr>
 <tr>
 <td class="bold">
+Pattern
+</td>
+<td colspan="2">
+<input id="pattern" type="text" name="pattern" value="" />
+</td>
+</tr>
+<tr>
+<td class="bold">
 Namespaces
 </td>
 <td colspan="2">
-<table style="border:none; font-size:inherit;">
-<tr style="border:none;">"""  % (namespaces[14].encode('utf-8'))
+<table style="border:none; font-size:inherit;">""" % (namespace_names[14].encode('utf-8'))
     count = 0
-    for k,v in sorted(namespaces.iteritems(), key=operator.itemgetter(0)):
+    for k,v in sorted(namespace_names.iteritems(), key=operator.itemgetter(0)):
+        if count % 2 == 0:
+            print '<tr style="border:none;">'
         if v == '':
             v = '(Main)'
         print """\
 <td style="border:none;"><input id="ns%s" type="checkbox" name="namespace" value="%s" /></td>
 <td style="border:none;"><label for="ns%s">%s</label></td>""" % (k, k, k, v.encode('utf-8'))
-        if count % 2 == 1:
-             print """\
-</tr>
-<tr>"""
+        if count % 2 != 0:
+            print '</tr>'
         count += 1
     print """\
-</tr>
 </table>
 </td>
 </tr>
@@ -220,8 +231,8 @@ Line wrapper
 <input id="wrapper" type="text" name="wrapper" value="$1" />
 </td>
 </tr>
-</form>
-</table>""" % limit_input
+</table>
+</form>""" % limit_input
 
 elif form.getvalue('list') in ('pages', 'files', 'categories', 'links', 'templates', 'externallinks'):
     target_column = 'page_title'
@@ -250,6 +261,12 @@ elif form.getvalue('list') in ('pages', 'files', 'categories', 'links', 'templat
     except:
         wrapper_input = '$1'
 
+    # Underscores or spaces in results?
+    if form.getvalue('prettify') == '1':
+        prettify_status = True
+    else:
+        prettify_status = False
+
     # Namespaces!
     try:
         if form['namespace'] is not None:
@@ -259,13 +276,15 @@ elif form.getvalue('list') in ('pages', 'files', 'categories', 'links', 'templat
     except:
         namespace_input = ''
 
-    if form.getvalue('list') == 'pages' and form.getvalue('category') is not None:
+    if form.getvalue('list') == 'pages' and form.getvalue('category'):
         category_input = underscore(form['category'].value)
         target_column = 'page_title'
         results = []
-        conn = MySQLdb.connect(host=host, db=db, read_default_file='/home/mzmcbride/.my.cnf')
-        cursor = conn.cursor()        
-        cursor.execute('''
+        conn = MySQLdb.connect(host=host,
+                               db=db,
+                               read_default_file='/home/mzmcbride/.my.cnf')
+        cursor = conn.cursor()
+        query = '''
         /* yanker.py &list=pages&category= */
         SELECT
           page_namespace,
@@ -277,9 +296,13 @@ elif form.getvalue('list') in ('pages', 'files', 'categories', 'links', 'templat
         %s
         %s
         %s;
-        ''' % (MySQLdb.escape_string(category_input), MySQLdb.escape_string(namespace_input), sort_query_input, limit_query_input))
+        ''' % (MySQLdb.escape_string(category_input),
+               MySQLdb.escape_string(namespace_input),
+               sort_query_input,
+               limit_query_input)
+        cursor.execute(query)
         for row in cursor.fetchall():
-            page_namespace = namespaces[row[0]].encode('utf-8')
+            page_namespace = namespace_names[row[0]].encode('utf-8')
             page_title = unicode(row[1], 'utf-8')
             if row[0] in (6,14):
                 full_page_title = ':%s:%s' % (page_namespace, page_title)
@@ -287,18 +310,55 @@ elif form.getvalue('list') in ('pages', 'files', 'categories', 'links', 'templat
                 full_page_title = '%s' % (page_title)
             else:
                 full_page_title = '%s:%s' % (page_namespace, page_title)
+            if prettify_status:
+                full_page_title = prettify(full_page_title)
             re_row = re.sub('\$1', full_page_title, wrapper_input)
             results.append(re_row)
         cursor.close()
         conn.close()
 
-        # Underscores or spaces in results?
-        if form.getvalue('prettify') == '1':
-            final_results = prettify('\n'.join(results).encode('utf-8'))
-        else:
-            final_results = underscore('\n'.join(results).encode('utf-8'))
+    elif form.getvalue('list') == 'pages' and form.getvalue('pattern'):
+        pattern_input = underscore(form['pattern'].value)
+        target_column = 'page_title'
+        results = []
+        conn = MySQLdb.connect(host=host,
+                               db=db,
+                               read_default_file='/home/mzmcbride/.my.cnf')
+        cursor = conn.cursor()
+        query = '''
+        /* yanker.py &list=pages&pattern= */
+        SELECT
+          page_namespace,
+          page_title
+        FROM page
+        WHERE page_title RLIKE '%s'
+        %s
+        %s
+        %s;
+        ''' % (MySQLdb.escape_string(pattern_input),
+               MySQLdb.escape_string(namespace_input),
+               sort_query_input,
+               limit_query_input)
+        cursor.execute(query)
+        for row in cursor.fetchall():
+            page_namespace = namespace_names[row[0]].encode('utf-8')
+            page_title = unicode(row[1], 'utf-8')
+            if row[0] in (6,14):
+                full_page_title = ':%s:%s' % (page_namespace, page_title)
+            elif row[0] == 0:
+                full_page_title = '%s' % (page_title)
+            else:
+                full_page_title = '%s:%s' % (page_namespace, page_title)
+            if prettify_status:
+                full_page_title = prettify(full_page_title)
+            re_row = re.sub('\$1', full_page_title, wrapper_input)
+            results.append(re_row)
+        cursor.close()
+        conn.close()
 
-        print """\
+    final_results = '\n'.join(results).encode('utf-8')
+
+    print """\
 <textarea id="results" style="font-size:1em; width:100%%; overflow:auto; height:500px;">
 %s
 </textarea>""" % (cgi.escape(final_results, quote=True))
@@ -319,7 +379,7 @@ else:
 print """\
 <div id="footer">
 <div id="meta-info">public domain&nbsp;<b>&middot;</b>&nbsp;\
-<a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/yanker&action=edit&section=new" title="Report a bug">bugs</a>
+<a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/yanker&amp;action=edit&amp;section=new" title="Report a bug">bugs</a>
 </div>
 </div>
 </body>
