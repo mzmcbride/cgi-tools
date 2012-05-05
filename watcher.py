@@ -1,16 +1,16 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 0.3
+# version 0.4
 # test cases:
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=user%20talk:Philippe|main%20Page|User_talk:MZMcBride
+# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?titles=user%20talk:Philippe|main%20Page|User_talk:MZMcBride
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Wikipedia_caultk:Sandbox|Wikipedia_caulk:Sandbox
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Fooooooo|Barbbbbbb|
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Main+Page%7CFooooooooo|||
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=frwiki_p&titles=Wikip%E9dia%3AAnnonces
-# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=bgwiki_p&titles=%26%231048%3B%26%231085%3B%26%231090%3B%26%231088%3B%26%231072%3B%26%231085%3B%26%231077%3B%26%231090%3B
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=bgwiki_p&titles=<b>test</b>
 # Wikipédia:Annonces with frwiki_p
 # Интранет on bgwiki_p
+# HAGGER????????????????????????????????????????????? on enwiki_p
+# Main page on enwiki_p
 import cgi, cgitb; cgitb.enable()
 
 import os, urllib
@@ -32,7 +32,7 @@ def database_list():
     return [row[0] for row in cursor.fetchall()]
 
 def choose_host_and_domain(db):
-    conn = MySQLdb.connect(host='sql-s1', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
+    conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
     /* watcher.py choose_host_and_domain */
@@ -49,22 +49,26 @@ def choose_host_and_domain(db):
     cursor.close()
     conn.close()
 
-def count_watchers(db, namespace, page_title):
+def page_info(db, namespace, page_title):
     conn = MySQLdb.connect(host=host, db=db, read_default_file='/home/mzmcbride/.my.cnf')
     cursor = conn.cursor()
     cursor.execute('''
-    /* watcher.py count_watchers */
+    /* watcher.py page_info */
     SELECT
+      page_is_redirect,
       COUNT(*)
     FROM watchlist
     JOIN toolserver.namespace
     ON dbname = %s
     AND wl_namespace = ns_id
+    LEFT JOIN page
+    ON page_namespace = wl_namespace
+    AND page_title = wl_title
     WHERE ns_name = %s
     AND wl_title = %s;
     ''' , (db, ns_name, page_title))
     for row in cursor.fetchall():
-        return row[0]
+        return { 'page_status': row[0], 'count': row[1]}
     cursor.close()
     conn.close()
 
@@ -85,6 +89,7 @@ if 'titles' in form:
 else:
     input = ''
 
+i = 0
 output = []
 for title in input.split('|'):
     if title == '':
@@ -105,37 +110,55 @@ for title in input.split('|'):
         except:
             page_title = ''
         combined_title = re.sub(r'(%20| )', '_', '%s:%s' % (ns_name, page_title))
-        count = count_watchers(db, ns_name, page_title)
+        title_info = page_info(db, ns_name, page_title)
+        page_status = title_info['page_status']
+        if page_status is None:
+             css_class = 'red'
+        elif page_status == 1:
+             i += 1
+             css_class = 'redirect'
+        else:
+             css_class = 'normal'
+        count = title_info['count']
         if count == 0 and re.search(':', title):
             ns_name = ''
-            if count_watchers(db, ns_name, combined_title) > 0:
-                count = count_watchers(db, ns_name, combined_title)
+            if page_info(db, ns_name, combined_title) > 0:
+                title_info = page_info(db, ns_name, combined_title)
+                count = title_info['count']
                 pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', combined_title))
             else:
                 ns_name = re.sub('_', ' ', title.split(':')[0][0].upper() + title.split(':')[0][1:])
-                count = count_watchers(db, ns_name, page_title)
+                title_info = page_info(db, ns_name, page_title)
+                count = title_info['count']
                 pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
         elif not re.search(':', title):
             ns_name = ''
             pre_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
-            count = count_watchers(db, ns_name, pre_title) # Bad hack like what.
+            title_info = page_info(db, ns_name, pre_title) # Bad hack like what.
+            count = title_info['count']
             pretty_title = '%s' % (re.sub('_', ' ', pre_title))
         else:
             pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
         pretty_title = pretty_title.lstrip(':').decode('utf8')
-        table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s">%s</a></td><td>%s</td></tr>' % (domain,
-                                                                                                    urllib.quote(pretty_title.encode('utf8')),
-                                                                                                    xml.sax.saxutils.escape(pretty_title.encode('utf8')),
-                                                                                                    xml.sax.saxutils.escape(pretty_title.encode('utf8')),
-                                                                                                    count)
+        table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td></tr>' % (domain,
+                                                                                                               urllib.quote(pretty_title.encode('utf8')),
+                                                                                                               xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                               css_class,
+                                                                                                               xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                               count)
     output.append(table_row)
+
+if i > 0:
+    redirect_footer = 'redirects are in <i>italics</i>'
+else:
+    redirect_footer = ''
 
 print """\
 Content-Type: text/html;charset=utf-8\n
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-<link rel="stylesheet" href="../style.css" type="text/css" />
+<link rel="stylesheet" href="../style.css?1" type="text/css" />
 <script type="text/javascript" src="../jquery-1.3.2.min.js"></script> 
 <script type="text/javascript" src="../jquery.tablesorter.js"></script>
 <script type="text/javascript">
@@ -203,11 +226,13 @@ else:
 </form>"""
 
 print """\
-<div class="footer">
+<div id="footer">
+<div id="redirect-info">%s</div>
+<div id="meta-info">
 <a href="http://www.gnu.org/copyleft/gpl.html" title="GNU General Public License, version 3">license</a><!--
 -->&nbsp;<b>&middot;</b>&nbsp;<!--
 --><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride&action=edit&section=new" title="Report a bug">bugs</a>
 </div>
+</div>
 </body>
-</html>
-"""
+</html>""" % (redirect_footer)
