@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 0.5
+# version 0.6
 # test cases:
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?titles=user%20talk:Philippe|main%20Page|User_talk:MZMcBride
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Wikipedia_caultk:Sandbox|Wikipedia_caulk:Sandbox
@@ -11,6 +11,7 @@
 # Интранет on bgwiki_p
 # HAGGER????????????????????????????????????????????? on enwiki_p
 # Main page on enwiki_p
+# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiktionary_p&titles=fap
 import cgi, cgitb; cgitb.enable()
 
 import os, urllib
@@ -90,7 +91,8 @@ else:
     input = ''
 
 cj_info = '' # In case it doesn't get set later.
-i = 0
+redirect_count = 0
+exclude_count = 0
 output = []
 for title in input.split('|'):
     if title == '':
@@ -106,17 +108,20 @@ for title in input.split('|'):
             pre_title = title.split(':')[1]
         except:
             pre_title = title.split(':')[0]
-        try:
-            page_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
-        except:
-            page_title = ''
+        if re.search('wikt', db, re.I):
+            page_title = re.sub(r'(%20| )', '_', pre_title[0] + pre_title[1:])
+        else:
+            try:
+                page_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
+            except:
+                page_title = ''
         combined_title = re.sub(r'(%20| )', '_', '%s:%s' % (ns_name, page_title))
         title_info = page_info(db, ns_name, page_title)
         page_status = title_info['page_status']
         if page_status is None:
              css_class = 'red'
         elif page_status == 1:
-             i += 1
+             redirect_count += 1
              css_class = 'redirect'
         else:
              css_class = 'normal'
@@ -134,7 +139,10 @@ for title in input.split('|'):
                 pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
         elif not re.search(':', title):
             ns_name = ''
-            pre_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
+            if re.search('wikt', db, re.I):
+                 pre_title = re.sub(r'(%20| )', '_', pre_title[0] + pre_title[1:])
+            else:
+                 pre_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
             title_info = page_info(db, ns_name, pre_title) # Bad hack like what.
             count = title_info['count']
             pretty_title = '%s' % (re.sub('_', ' ', pre_title))
@@ -161,6 +169,7 @@ for title in input.split('|'):
             cj_data = ''
         if count < 30:
             count = '&mdash;'
+            exclude_count += 1
         else:
             count = count
         table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
@@ -172,8 +181,13 @@ for title in input.split('|'):
                                                                                                                  cj_data)
     output.append(table_row)
 
-if i > 0:
-    redirect_footer = '<div id="redirect-info">redirects are in <i>italics</i></div>'
+if exclude_count > 0:
+    exclude_footer = '&mdash; indicates the page has fewer than 30 watchers<br />'
+else:
+    exclude_footer = ''
+
+if redirect_count > 0:
+    redirect_footer = 'redirects are in <i>italics</i>'
 else:
     redirect_footer = ''
 
@@ -251,14 +265,11 @@ else:
 </form>"""
 
 print """\
-<div id="footer">
-%s<div id="meta-info">
+<div id="footer"><div id="redirect-info">%s%s</div><div id="meta-info">
 <a href="http://www.gnu.org/copyleft/gpl.html" title="GNU General Public License, version 3">license</a><!--
 -->&nbsp;<b>&middot;</b>&nbsp;<!--
---><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/watcher&action=edit&section=new" title="Report a bug">bugs</a><!--
--->&nbsp;<b>&middot;</b>&nbsp;<!--
--->&mdash; indicates the page has fewer than 30 watchers
+--><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/watcher&action=edit&section=new" title="Report a bug">bugs</a>
 </div>
 </div>
 </body>
-</html>""" % (redirect_footer)
+</html>""" % (exclude_footer, redirect_footer)
