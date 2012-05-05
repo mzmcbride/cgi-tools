@@ -1,15 +1,11 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# version 0.1
-import cgi, cgitb; cgitb.enable()
+# Public domain; MZMcBride; 2011
+# Version 0.2
 
-import os
-import urllib
-import urllib2
+import cgi
+
 import operator
 import re
-import xml.sax.saxutils
-import glob
 import MySQLdb
 
 #import settings
@@ -107,17 +103,14 @@ except:
     domain = None
 
 namespaces = get_namespace_names(db)
-# xml.sax.saxutils.escape() ?
-
-output = []
 
 print """\
 Content-Type: text/html;charset=utf-8\n
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-<link rel="stylesheet" href="../style-yanker.css?3" type="text/css" />
 <title>yanker</title>
+<link rel="stylesheet" href="../style-yanker.css?3" type="text/css" />
 </head>
 <body>
 <div class="header" id="main-title"><a href="/~mzmcbride/cgi-bin/yanker.py" title="yanker">yanker</a></div>"""
@@ -188,7 +181,7 @@ Namespaces
             v = '(Main)'
         print """\
 <td style="border:none;"><input id="ns%s" type="checkbox" name="namespace" value="%s" /></td>
-<td style="border:none;">%s</td>""" % (k, k, v.encode('utf-8'))
+<td style="border:none;"><label for="ns%s">%s</label></td>""" % (k, k, k, v.encode('utf-8'))
         if count % 2 == 1:
              print """\
 </tr>
@@ -308,7 +301,7 @@ elif form.getvalue('list') in ('pages', 'files', 'categories', 'links', 'templat
         print """\
 <textarea id="results" style="font-size:1em; width:100%%; overflow:auto; height:500px;">
 %s
-</textarea>""" % (final_results)
+</textarea>""" % (cgi.escape(final_results, quote=True))
 
 elif form.getvalue('list') == 'loldongs':
     print """\
@@ -325,10 +318,8 @@ else:
 
 print """\
 <div id="footer">
-<div id="meta-info"><!--
---><a href="http://www.gnu.org/copyleft/gpl.html" title="GNU General Public License, version 3">license</a><!--
--->&nbsp;<b>&middot;</b>&nbsp;<!--
---><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/yanker&action=edit&section=new" title="Report a bug">bugs</a>
+<div id="meta-info">public domain&nbsp;<b>&middot;</b>&nbsp;\
+<a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/yanker&action=edit&section=new" title="Report a bug">bugs</a>
 </div>
 </div>
 </body>
