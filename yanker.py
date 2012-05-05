@@ -121,7 +121,7 @@ Content-Type: text/html;charset=utf-8\n
 
 if form.getvalue('list') is None:
     print """\
-<form action="http://toolserver.org/~mzmcbride/yanker/" method="get">
+<form action="/~mzmcbride/yanker/" method="get">
 <table id="input" class="inner-table">
 <tr>
 <th colspan="3" class="header">Make your choices.</th>
@@ -373,13 +373,10 @@ elif host is None:
 You didn't specify an appropriate database name.
 </pre>"""
 
-else:
-    print ' bar'
-
 print """\
 <div id="footer">
 <div id="meta-info">public domain&nbsp;<b>&middot;</b>&nbsp;\
-<a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/yanker&amp;action=edit&amp;section=new" title="Report a bug">bugs</a>
+<a href="//en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/yanker&amp;action=edit&amp;section=new" title="Report a bug">bugs</a>
 </div>
 </div>
 </body>
