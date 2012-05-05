@@ -236,7 +236,7 @@ if host is not None:
             else:
                 count = count
             if combined_title != 'User_talk:Durova' and combined_title != 'User:Durova':
-                table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
+                table_row = '<tr><td><a href="//%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
                                                                                                                      urllib.quote(pretty_title.encode('utf8')),
                                                                                                                      cgi.escape(pretty_title.encode('utf8'),quote=True),
                                                                                                                      css_class,
@@ -249,14 +249,14 @@ if host is not None:
 
 if logged_in:
     if os.environ['QUERY_STRING']:
-        login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?logout=1&tool=watcher&%s" title="log out">log out</a>' % os.environ['QUERY_STRING']
+        login_footer = '<a href="/~mzmcbride/cgi-bin/login.py?logout=1&tool=watcher&%s" title="log out">log out</a>' % os.environ['QUERY_STRING']
     else:
-        login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?logout=1&tool=watcher" title="log out">log out</a>'
+        login_footer = '<a href="/~mzmcbride/cgi-bin/login.py?logout=1&tool=watcher" title="log out">log out</a>'
 else:
     if os.environ['QUERY_STRING']:
-        login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?tool=watcher&%s" title="log in">log in</a>' % os.environ['QUERY_STRING']
+        login_footer = '<a href="/~mzmcbride/cgi-bin/login.py?tool=watcher&%s" title="log in">log in</a>' % os.environ['QUERY_STRING']
     else:
-        login_footer = '<a href="http://toolserver.org/~mzmcbride/cgi-bin/login.py?tool=watcher" title="log in">log in</a>'
+        login_footer = '<a href="/~mzmcbride/cgi-bin/login.py?tool=watcher" title="log in">log in</a>'
 
 if exclude_count > 0:
     exclude_footer = '&mdash; indicates the page has fewer than 30 watchers<br />'
@@ -319,7 +319,7 @@ You didn't specify an appropriate database name.
 
 else:
     print """\
-<form action="http://toolserver.org/~mzmcbride/watcher/" method="get">
+<form action="/~mzmcbride/watcher/" method="get">
 <table id="input" class="inner-table">
 <tr>
 <th colspan="2" class="header">Input page titles. Separate multiple titles with |.</th>
@@ -355,9 +355,9 @@ print """\
 <div id="meta-info">
 %s<!--
 -->&nbsp;<b>&middot;</b>&nbsp;<!--
---><a href="http://www.gnu.org/copyleft/gpl.html" title="GNU General Public License, version 3">license</a><!--
+-->public domain<!--
 -->&nbsp;<b>&middot;</b>&nbsp;<!--
---><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/watcher&action=edit&section=new" title="Report a bug">bugs</a>
+--><a href="//en.wikipedia.org/w/index.php?title=User_talk:MZMcBride/watcher&action=edit&section=new" title="Report a bug">bugs</a>
 </div>
 </div>
 </body>
