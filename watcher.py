@@ -1,14 +1,12 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 0.9
+# version 1.0
 import cgi, cgitb; cgitb.enable()
 
 import os
 import urllib
-import urllib2
 import re
 import xml.sax.saxutils
-import glob
 import MySQLdb
 import Cookie
 import hashlib
@@ -147,19 +145,20 @@ exclude_count = 0
 output = []
 if host is not None:
     for title in input.split('|'):
+        title = re.sub(r'(\xe2\x80\x8e|\xe2\x80\x8f)', '', title) # Eliminate LTR and RTL marks.
         if title == '':
             continue
         else:
             try:
-                ns_name = re.sub('_', ' ', title.split(':')[0][0].upper() + title.split(':')[0][1:])
+                ns_name = re.sub('_', ' ', title.split(':', 1)[0][0].upper() + title.split(':', 1)[0][1:])
             except:
                 ns_name = ''
-            if title.split(':')[0] == title:
+            if title.split(':', 1)[0] == title:
                 ns_name = ''
             try:
-                pre_title = title.split(':')[1]
+                pre_title = title.split(':', 1)[1]
             except:
-                pre_title = title.split(':')[0]
+                pre_title = title.split(':', 1)[0]
             if re.search('wikt', db, re.I):
                 page_title = re.sub(r'(%20| )', '_', pre_title[0] + pre_title[1:])
             else:
@@ -185,7 +184,7 @@ if host is not None:
                     count = title_info['count']
                     pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', combined_title))
                 else:
-                    ns_name = re.sub('_', ' ', title.split(':')[0][0].upper() + title.split(':')[0][1:])
+                    ns_name = re.sub('_', ' ', title.split(':', 1)[0][0].upper() + title.split(':', 1)[0][1:])
                     title_info = page_info(db, ns_name, page_title)
                     count = title_info['count']
                     pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
@@ -226,13 +225,16 @@ if host is not None:
                 exclude_count += 1
             else:
                 count = count
-            table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
+            if combined_title != 'User_talk:Durova' and combined_title != 'User:Durova':
+                table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
                                                                                                                      urllib.quote(pretty_title.encode('utf8')),
                                                                                                                      xml.sax.saxutils.escape(pretty_title.encode('utf8')),
                                                                                                                      css_class,
                                                                                                                      xml.sax.saxutils.escape(pretty_title.encode('utf8')),
                                                                                                                      count,
                                                                                                                      cj_data)
+            else:
+                table_row = ''
         output.append(table_row)
 
 if logged_in:
