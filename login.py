@@ -83,10 +83,10 @@ Content-Type: text/html;charset=utf-8\n
 </head>
 <body>
 <div class="header" id="main-title"><a href="/~mzmcbride/cgi-bin/login.py" title="login">login</a></div>
-<form action="http://toolserver.org/~mzmcbride/cgi-bin/login.py%s" method="post">
+<form action="/~mzmcbride/cgi-bin/login.py%s" method="post">
 <table id="input" class="inner-table">
 <tr>
-<th colspan="2" class="header">Input your <a href="http://toolserver.org/~magnus/tusc.php" title="Toolserver User Screening Control">TUSC</a> info.</th>
+<th colspan="2" class="header">Input your <a href="/~magnus/tusc.php" title="Toolserver User Screening Control">TUSC</a> info.</th>
 </tr>
 <tr>
 <th>Language</th>
@@ -133,7 +133,7 @@ elif (language_input
       and user_input
       and password_input
       and tool_input):
-    url = 'http://toolserver.org/~magnus/tusc.php'
+    url = 'https://toolserver.org/~magnus/tusc.php'
     values = {'language' : language_input,
               'project' : project_input,
               'user' : user_input,
@@ -156,15 +156,15 @@ elif (language_input
              cookie['mz_chocolate_chip']['max-age'] = 60**5
              cookie['mz_chocolate_chip']['path'] = '/~mzmcbride/watcher/'
              if tool_input == 'watcher' and form.getvalue('titles') is not None:
-                  return_message = ' Proceed to <a href="http://toolserver.org/~mzmcbride/watcher/?db=%s&titles=%s" title="watcher">watcher</a>?' % (form.getvalue('db'), form.getvalue('titles'))
+                  return_message = ' Proceed to <a href="/~mzmcbride/watcher/?db=%s&titles=%s" title="watcher">watcher</a>?' % (form.getvalue('db'), form.getvalue('titles'))
              else:
-                  return_message = ' Proceed to <a href="http://toolserver.org/~mzmcbride/watcher/" title="watcher">watcher</a>?'
+                  return_message = ' Proceed to <a href="/~mzmcbride/watcher/" title="watcher">watcher</a>?'
              login_status = 'You\'re now logged in!%s' % return_message
              print cookie
         else:
-             login_status = 'Sorry, you\'re not on the <a href="http://meta.wikimedia.org/wiki/Toolserver/watcher" title="access list">access list</a>.'
+             login_status = 'Sorry, you\'re not on the <a href="//meta.wikimedia.org/wiki/Toolserver/watcher" title="access list">access list</a>.'
     elif valid_user_check == '0':
-        login_status = 'Sorry, there\'s something wrong with your <a href="http://toolserver.org/~magnus/tusc.php" title="Toolserver User Screening Control">TUSC</a> info.'
+        login_status = 'Sorry, there\'s something wrong with your <a href="/~magnus/tusc.php" title="Toolserver User Screening Control">TUSC</a> info.'
     else:
         login_status = 'Sorry, there was an error. It was likely due to setting the wrong language or project. Please remember that sites like Wikimedia Commons use language: commons and project: wikimedia.'
     print """\
@@ -183,9 +183,9 @@ else:
     if logout_input == '1':
          if tool_input == 'watcher':
              if form.getvalue('titles') is not None:
-                 return_message = ' Return to <a href="http://toolserver.org/~mzmcbride/cgi-bin/watcher.py?db=%s&titles=%s" title="watcher">watcher</a>?' % (form.getvalue('db'), form.getvalue('titles'))
+                 return_message = ' Return to <a href="/~mzmcbride/watcher/?db=%s&titles=%s" title="watcher">watcher</a>?' % (form.getvalue('db'), form.getvalue('titles'))
              else:
-                 return_message = ' Return to <a href="http://toolserver.org/~mzmcbride/cgi-bin/watcher.py" title="watcher">watcher</a>?'
+                 return_message = ' Return to <a href="/~mzmcbride/cgi-bin/watcher.py" title="watcher">watcher</a>?'
          else:
              return_message = ''
          login_status = 'You\'re now logged out. Congratulations.%s' % return_message
@@ -211,9 +211,9 @@ Content-Type: text/html;charset=utf-8\n
 print """\
 <div id="footer">
 <div id="meta-info">
-<a href="http://www.gnu.org/copyleft/gpl.html" title="GNU General Public License, version 3">license</a><!--
+public domain<!--
 -->&nbsp;<b>&middot;</b>&nbsp;<!--
---><a href="http://en.wikipedia.org/w/index.php?title=User_talk:MZMcBride&action=edit&section=new" title="Report a bug">bugs</a>
+--><a href="//en.wikipedia.org/w/index.php?title=User_talk:MZMcBride&action=edit&section=new" title="Report a bug">bugs</a>
 </div>
 </div>
 </body>
