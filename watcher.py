@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 0.6
+# version 0.7
 # test cases:
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?titles=user%20talk:Philippe|main%20Page|User_talk:MZMcBride
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Wikipedia_caultk:Sandbox|Wikipedia_caulk:Sandbox
@@ -12,6 +12,10 @@
 # HAGGER????????????????????????????????????????????? on enwiki_p
 # Main page on enwiki_p
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiktionary_p&titles=fap
+# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=dewiki_p
+# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=
+# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py
+# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=dewiki_ppppp
 import cgi, cgitb; cgitb.enable()
 
 import os, urllib
@@ -75,15 +79,25 @@ def page_info(db, namespace, page_title):
 
 form = cgi.FieldStorage()
 # Pick a db; make enwiki_p the default
-try:
-    db = form['db'].value
-except:
+if form.getvalue('db') is not None:
+    db = form.getvalue('db')
+else:
     db = 'enwiki_p'
 
 # All right, now let's pick a host and domain
-host_and_domain = choose_host_and_domain(db)
-host = host_and_domain[0]
-domain = host_and_domain[1]
+try:
+    host_and_domain = choose_host_and_domain(db)
+    host = host_and_domain[0]
+    domain = host_and_domain[1]
+except:
+    host = None
+    domain = None
+
+# Some debugging code
+try:
+    debug = form['debug'].value
+except:
+    debug = 'false'
 
 if 'titles' in form:
     input = form["titles"].value
@@ -94,92 +108,95 @@ cj_info = '' # In case it doesn't get set later.
 redirect_count = 0
 exclude_count = 0
 output = []
-for title in input.split('|'):
-    if title == '':
-        continue
-    else:
-        try:
-            ns_name = re.sub('_', ' ', title.split(':')[0][0].upper() + title.split(':')[0][1:])
-        except:
-            ns_name = ''
-        if title.split(':')[0] == title:
-            ns_name = ''
-        try:
-            pre_title = title.split(':')[1]
-        except:
-            pre_title = title.split(':')[0]
-        if re.search('wikt', db, re.I):
-            page_title = re.sub(r'(%20| )', '_', pre_title[0] + pre_title[1:])
+if host is not None:
+    for title in input.split('|'):
+        if title == '':
+            continue
         else:
             try:
-                page_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
-            except:
-                page_title = ''
-        combined_title = re.sub(r'(%20| )', '_', '%s:%s' % (ns_name, page_title))
-        title_info = page_info(db, ns_name, page_title)
-        page_status = title_info['page_status']
-        if page_status is None:
-             css_class = 'red'
-        elif page_status == 1:
-             redirect_count += 1
-             css_class = 'redirect'
-        else:
-             css_class = 'normal'
-        count = title_info['count']
-        if count == 0 and re.search(':', title):
-            ns_name = ''
-            if page_info(db, ns_name, combined_title) > 0:
-                title_info = page_info(db, ns_name, combined_title)
-                count = title_info['count']
-                pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', combined_title))
-            else:
                 ns_name = re.sub('_', ' ', title.split(':')[0][0].upper() + title.split(':')[0][1:])
-                title_info = page_info(db, ns_name, page_title)
-                count = title_info['count']
-                pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
-        elif not re.search(':', title):
-            ns_name = ''
+            except:
+                ns_name = ''
+            if title.split(':')[0] == title:
+                ns_name = ''
+            try:
+                pre_title = title.split(':')[1]
+            except:
+                pre_title = title.split(':')[0]
             if re.search('wikt', db, re.I):
-                 pre_title = re.sub(r'(%20| )', '_', pre_title[0] + pre_title[1:])
+                page_title = re.sub(r'(%20| )', '_', pre_title[0] + pre_title[1:])
             else:
-                 pre_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
-            title_info = page_info(db, ns_name, pre_title) # Bad hack like what.
+                try:
+                    page_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
+                except:
+                    page_title = ''
+            combined_title = re.sub(r'(%20| )', '_', '%s:%s' % (ns_name, page_title))
+            title_info = page_info(db, ns_name, page_title)
+            page_status = title_info['page_status']
+            if page_status is None:
+                 css_class = 'red'
+            elif page_status == 1:
+                 redirect_count += 1
+                 css_class = 'redirect'
+            else:
+                 css_class = 'normal'
             count = title_info['count']
-            pretty_title = '%s' % (re.sub('_', ' ', pre_title))
-        else:
-            pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
-        pretty_title = pretty_title.lstrip(':').decode('utf8')
-        # Just for fun :-)
-        try:
-            if re.match('centi(jimboe?s?|jimbeaux?)$', form["measure"].value.lower(), re.I):
-                cj_count = page_info(db, 'User', 'Jimbo_Wales')['count']
-                cj_info = '<div id="subheadline">1 centijimbo is %.2f watchers</div>' % (float(cj_count)/100)
-                cj_header = '<th class="header">Centijimbos</th>'
-                if count < 30:
-                    cj_data = '<td>&mdash;</td>'
+            if count == 0 and re.search(':', title):
+                ns_name = ''
+                if page_info(db, ns_name, combined_title) > 0:
+                    title_info = page_info(db, ns_name, combined_title)
+                    count = title_info['count']
+                    pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', combined_title))
                 else:
-                    cj_data = '<td>%.1f</td>' % ((float(count)/cj_count) * 100)
+                    ns_name = re.sub('_', ' ', title.split(':')[0][0].upper() + title.split(':')[0][1:])
+                    title_info = page_info(db, ns_name, page_title)
+                    count = title_info['count']
+                    pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
+            elif not re.search(':', title):
+                ns_name = ''
+                if re.search('wikt', db, re.I):
+                     pre_title = re.sub(r'(%20| )', '_', pre_title[0] + pre_title[1:])
+                else:
+                     pre_title = re.sub(r'(%20| )', '_', pre_title[0].upper() + pre_title[1:])
+                title_info = page_info(db, ns_name, pre_title) # Bad hack like what.
+                count = title_info['count']
+                pretty_title = '%s' % (re.sub('_', ' ', pre_title))
             else:
+                pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
+            pretty_title = pretty_title.lstrip(':').decode('utf8')
+            # Just for fun :-)
+            try:
+                if re.match('centi(jimboe?s?|jimbeaux?)$', form["measure"].value.lower(), re.I):
+                    cj_count = page_info(db, 'User', 'Jimbo_Wales')['count']
+                    cj_info = '<div id="subheadline">1 centijimbo is %.2f watchers</div>' % (float(cj_count)/100)
+                    cj_header = '<th class="header">Centijimbos</th>'
+                    if count < 30:
+                        cj_data = '<td>&mdash;</td>'
+                    else:
+                        cj_data = '<td>%.1f</td>' % ((float(count)/cj_count) * 100)
+                else:
+                    cj_info = ''
+                    cj_header = ''
+                    cj_data = ''
+            except:
                 cj_info = ''
                 cj_header = ''
                 cj_data = ''
-        except:
-            cj_info = ''
-            cj_header = ''
-            cj_data = ''
-        if count < 30:
-            count = '&mdash;'
-            exclude_count += 1
-        else:
-            count = count
-        table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
-                                                                                                                 urllib.quote(pretty_title.encode('utf8')),
-                                                                                                                 xml.sax.saxutils.escape(pretty_title.encode('utf8')),
-                                                                                                                 css_class,
-                                                                                                                 xml.sax.saxutils.escape(pretty_title.encode('utf8')),
-                                                                                                                 count,
-                                                                                                                 cj_data)
-    output.append(table_row)
+            if debug in ('true', '1'):
+                count = count
+            elif count < 30:
+                count = '&mdash;'
+                exclude_count += 1
+            else:
+                count = count
+            table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s" class="%s">%s</a></td><td>%s</td>%s</tr>' % (domain,
+                                                                                                                     urllib.quote(pretty_title.encode('utf8')),
+                                                                                                                     xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                                     css_class,
+                                                                                                                     xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                                     count,
+                                                                                                                     cj_data)
+        output.append(table_row)
 
 if exclude_count > 0:
     exclude_footer = '&mdash; indicates the page has fewer than 30 watchers<br />'
@@ -213,9 +230,9 @@ Content-Type: text/html;charset=utf-8\n
 <div class="header" id="main-title"><a href="/~mzmcbride/cgi-bin/watcher.py" title="watcher">watcher</a></div>
 %s""" % (cj_info)
 
-if form:
-    try:
-        print """\
+if input:
+    if db and host is not None and input:
+         print """\
 <table id="results" class="inner-table">
 <thead>
 <tr>
@@ -227,11 +244,16 @@ if form:
 %s
 </tbody>
 </table>""" % (cj_header, '\n'.join(output))
-
-    except:
+    else:
         print """\
 <pre>
 There was some sort of error. Sorry. :-(
+</pre>"""
+
+elif host is None:
+    print """\
+<pre>
+You didn't specify an appropriate database name.
 </pre>"""
 
 else:
@@ -246,7 +268,7 @@ else:
 <th>
 <select id="database" name="db">"""
     for i in database_list():
-        if i == 'enwiki_p':
+        if i == '%s' % db:
             print """\
 <option value="%s" selected="selected">%s</option>""" % (i, i)
         else:
