@@ -102,7 +102,7 @@ def page_info(db, namespace, page_title):
     AND page_title = wl_title
     WHERE ns_name = %s
     AND wl_title = %s;
-    ''' , (db, ns_name, page_title))
+    ''' , (db, namespace, page_title))
     for row in cursor.fetchall():
         page_status = row[0]
         count = row[1]
