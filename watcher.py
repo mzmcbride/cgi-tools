@@ -1,12 +1,16 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 0.2
+# version 0.3
 # test cases:
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=user%20talk:Philippe|main%20Page|User_talk:MZMcBride
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Wikipedia_caultk:Sandbox|Wikipedia_caulk:Sandbox
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Fooooooo|Barbbbbbb|
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=enwiki_p&titles=Main+Page%7CFooooooooo|||
 # http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=frwiki_p&titles=Wikip%E9dia%3AAnnonces
+# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=bgwiki_p&titles=%26%231048%3B%26%231085%3B%26%231090%3B%26%231088%3B%26%231072%3B%26%231085%3B%26%231077%3B%26%231090%3B
+# http://toolserver.org/~mzmcbride/cgi-bin/watcher-test.py?db=bgwiki_p&titles=<b>test</b>
+# Wikipédia:Annonces with frwiki_p
+# Интранет on bgwiki_p
 import cgi, cgitb; cgitb.enable()
 
 import os, urllib
@@ -14,7 +18,6 @@ import re
 import xml.sax.saxutils
 import glob
 import MySQLdb
-import settings
 
 def database_list():
     conn = MySQLdb.connect(host='sql-s3', db='toolserver', read_default_file='/home/mzmcbride/.my.cnf')
@@ -119,16 +122,16 @@ for title in input.split('|'):
             pretty_title = '%s' % (re.sub('_', ' ', pre_title))
         else:
             pretty_title = '%s:%s' % (re.sub('_', ' ', ns_name), re.sub('_', ' ', page_title))
-        pretty_title = xml.sax.saxutils.escape(pretty_title.lstrip(':'))
+        pretty_title = pretty_title.lstrip(':').decode('utf8')
         table_row = '<tr><td><a href="http://%s/wiki/%s" title="%s">%s</a></td><td>%s</td></tr>' % (domain,
-                                                                                                    urllib.quote(pretty_title),
-                                                                                                    pretty_title,
-                                                                                                    pretty_title,
+                                                                                                    urllib.quote(pretty_title.encode('utf8')),
+                                                                                                    xml.sax.saxutils.escape(pretty_title.encode('utf8')),
+                                                                                                    xml.sax.saxutils.escape(pretty_title.encode('utf8')),
                                                                                                     count)
     output.append(table_row)
 
 print """\
-Content-Type: text/html\n
+Content-Type: text/html;charset=utf-8\n
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
@@ -168,6 +171,7 @@ if form:
 <pre>
 There was some sort of error. Sorry. :-(
 </pre>"""
+
 else:
     print """\
 <form action="http://toolserver.org/~mzmcbride/cgi-bin/watcher.py" method="get">
