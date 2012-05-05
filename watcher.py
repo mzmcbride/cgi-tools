@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# version 1.0
-import cgi, cgitb; cgitb.enable()
+# version 1.2
 
+import cgi
 import os
 import urllib
 import re
@@ -145,7 +145,7 @@ exclude_count = 0
 output = []
 if host is not None:
     for title in input.split('|'):
-        title = re.sub(r'(\xe2\x80\x8e|\xe2\x80\x8f)', '', title) # Eliminate LTR and RTL marks.
+        title = re.sub(r'(\xe2\x80\x8e|\xe2\x80\x8f)', '', title).strip(' ') # Eliminate LTR and RTL marks and strip extra whitespace.
         if title == '':
             continue
         else:
@@ -259,13 +259,14 @@ else:
     redirect_footer = ''
 
 print """\
+Cache-Control: no-cache
 Content-Type: text/html;charset=utf-8\n
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-<link rel="stylesheet" href="../style.css?2" type="text/css" />
-<script type="text/javascript" src="../jquery-1.3.2.min.js"></script> 
-<script type="text/javascript" src="../jquery.tablesorter.js"></script>
+<link rel="stylesheet" href="/~mzmcbride/style.css?2" type="text/css" />
+<script type="text/javascript" src="/~mzmcbride/jquery-1.3.2.min.js"></script> 
+<script type="text/javascript" src="/~mzmcbride/jquery.tablesorter.js"></script>
 <script type="text/javascript">
     $(document).ready(function() 
     {
@@ -277,7 +278,7 @@ Content-Type: text/html;charset=utf-8\n
 <title>watcher</title>
 </head>
 <body>
-<div class="header" id="main-title"><a href="/~mzmcbride/cgi-bin/watcher.py" title="watcher">watcher</a></div>
+<div class="header" id="main-title"><a href="/~mzmcbride/watcher/" title="watcher">watcher</a></div>
 %s""" % (cj_info)
 
 if input:
@@ -308,7 +309,7 @@ You didn't specify an appropriate database name.
 
 else:
     print """\
-<form action="http://toolserver.org/~mzmcbride/cgi-bin/watcher.py" method="get">
+<form action="http://toolserver.org/~mzmcbride/watcher/" method="get">
 <table id="input" class="inner-table">
 <tr>
 <th colspan="2" class="header">Input page titles. Separate multiple titles with |.</th>
