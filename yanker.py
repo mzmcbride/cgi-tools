@@ -162,7 +162,7 @@ List
 %s
 </td>
 <td colspan="2">
-<input id="category" type="text" name="category" />
+<input class="text-input" id="category" type="text" name="category" />
 </td>
 </tr>
 <tr>
@@ -170,7 +170,7 @@ List
 Page
 </td>
 <td colspan="2">
-<input id="page" type="text" name="page" value="" />
+<input class="text-input" id="page" type="text" name="page" value="" />
 </td>
 </tr>
 <tr>
@@ -178,7 +178,7 @@ Page
 Pattern
 </td>
 <td colspan="2">
-<input id="pattern" type="text" name="pattern" value="" />
+<input class="text-input" id="pattern" type="text" name="pattern" value="" />
 </td>
 </tr>
 <tr>
@@ -208,7 +208,7 @@ Namespaces
 Limit
 </td>
 <td colspan="2">
-<input id="limit" type="text" name="limit" value="%s" />
+<input class="text-input" id="limit" type="text" name="limit" value="%s" />
 </td>
 </tr>
 <tr>
@@ -228,7 +228,7 @@ Sort
 Line wrapper
 </td>
 <td colspan="2">
-<input id="wrapper" type="text" name="wrapper" value="$1" />
+<input class="text-input" id="wrapper" type="text" name="wrapper" value="$1" />
 </td>
 </tr>
 </table>
